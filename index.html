@@ -3,235 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>こいフラ娯楽屋 - AUTO LOGIN</title>
     <style>
-        :root { --gold: #ffd700; --numa: #39ff14; --pink: #ff007f; --bg: #050505; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; font-family: sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        header { padding: 8px 15px; background: #000; border-bottom: 2px solid var(--numa); display: flex; justify-content: space-between; align-items: center; z-index: 100; }
-        #display-name { color: var(--numa); font-weight: bold; font-size: 16px; }
-        .currency { font-weight: bold; font-size: 16px; color: var(--gold); }
-
-        #view { flex: 1; position: relative; width: 100%; overflow: hidden; }
-        .screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; padding: 10px; overflow-y: auto; }
-        .screen.active { display: flex; }
-
-        .btn { padding: 10px; border-radius: 8px; border: none; background: #333; color: white; font-weight: bold; cursor: pointer; }
-        .btn-main { background: var(--numa); color: #000; width: 95%; margin-top: 10px; }
-        input { background: #111; color: white; border: 1px solid #333; padding: 8px; border-radius: 6px; font-size: 14px; }
-
-        /* クレーン & ゲーム */
-        #machine { width: 95vw; height: 300px; max-width: 400px; background: #222; border: 4px solid #444; position: relative; overflow: hidden; border-radius: 15px; }
-        #hole { position: absolute; left: 0; bottom: 0; width: 60px; height: 35px; background: #000; z-index: 5; }
-        #unit { position: absolute; top: 0; width: 50px; display:flex; flex-direction:column; align-items:center; z-index:10; }
-        #wire { width: 4px; height: 30px; background: #aaa; }
-        #claw { width: 50px; height: 15px; background: var(--pink); position: relative; border-radius: 5px; }
-        .arm { width: 8px; height: 30px; background: #eee; position: absolute; top: 10px; transition: 0.3s; transform-origin: top; }
-        .arm.L { left: 5px; transform: rotate(40deg); } .arm.R { right: 5px; transform: rotate(-40deg); }
-        .pz { position: absolute; bottom: 10px; font-size: 25px; width: 30px; text-align: center; z-index: 8; }
-        #track { width: 100%; height: 180px; background: #1a4a1a; position: relative; overflow: hidden; border: 3px solid #000; border-radius: 10px; }
-        .horse { position: absolute; left: 10px; font-size: 28px; }
-
-        /* チャット（空白なし） */
-        #scr-chat { padding: 0 !important; }
-        #chat-box { flex: 1; background: #000; overflow-y: auto; padding: 10px; font-size: 14px; width: 100%; }
-        #chat-box div { margin-bottom: 2px; border-bottom: 1px solid #111; padding-bottom: 2px; width: 100%; }
-        .chat-controls { background: #111; padding: 8px; border-top: 1px solid #333; width: 100%; }
-        .input-group { display: flex; gap: 5px; margin-bottom: 8px; }
-        .remit-group { display: flex; gap: 5px; background: #1a1a1a; padding: 8px; border-radius: 8px; border-left: 3px solid var(--numa); }
-        .remit-group label { font-size: 10px; color: var(--numa); display: block; margin-bottom: 2px; }
-
-        .card { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; width: 100%; padding: 10px; margin-bottom: 8px; }
-        .admin-box { width: 100%; background: #200; border: 1px dashed #f00; padding: 10px; border-radius: 10px; margin-top: 10px; display: none; }
-
-        nav { display: flex; background: #000; border-top: 2px solid #333; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-btn { flex: 1; background: none; border: none; color: #666; font-size: 9px; padding: 8px 0; }
-        .nav-btn.active { color: var(--numa); }
-        .nav-btn span { font-size: 18px; display: block; }
-
-        /* ログイン画面 */
-        #login-screen { position: fixed; inset: 0; background: #000; z-index: 50000; display: none; align-items: center; justify-content: center; }
-        #toast { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: var(--numa); color: #000; padding: 8px 16px; border-radius: 50px; display: none; z-index: 60000; font-weight: bold; }
+        @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+        body { background: #000; margin: 0; overflow: hidden; color: white; font-family: 'DotGothic16', sans-serif; touch-action: none; }
+        #ui { text-align: center; height: 50px; line-height: 50px; font-size: 20px; }
+        #hp-bar-ui { width: 150px; height: 20px; background: #c00; display: inline-block; vertical-align: middle; border: 2px solid #fff; position: relative; margin: 0 10px; }
+        #hp-fill { height: 100%; background: #ff0; width: 100%; transition: width 0.1s; }
+        canvas { display: block; background: #000; margin: 0 auto; border: 2px solid #333; }
+        #controls { display: flex; justify-content: center; gap: 10px; padding: 10px; background: #000; }
+        .menu-btn { flex: 1; max-width: 100px; padding: 12px 0; border: 3px solid #ff8000; background: #000; color: #ff8000; font-family: 'DotGothic16'; font-weight: bold; font-size: 14px; }
+        #joystick { position: fixed; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid #fff; visibility: hidden; }
+        #stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: #fff; border-radius: 50%; opacity: 0.5; }
     </style>
 </head>
-<body>
-
-<header>
-    <div id="display-name">---</div>
-    <div class="currency">🪙 <span id="c-v">0</span></div>
-</header>
-
-<div id="view">
-    <div id="scr-pachi" class="screen active">
-        <canvas id="p-cvs" width="350" height="380" style="background:#000; border-radius:15px; border:2px solid #333;"></canvas>
-        <button class="btn btn-main" onclick="shootPachi()">打ち出し (5枚)</button>
+<body onclick="if(isGameOver) initGame()">
+    <div id="ui">SANZ LV 19 HP <div id="hp-bar-ui"><div id="hp-fill"></div></div> <span id="hp-text">100/100</span></div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="controls">
+        <button class="menu-btn" onclick="startTurn()">FIGHT</button>
+        <button class="menu-btn" onclick="hp=100; startTurn()">ITEM</button>
     </div>
-    <div id="scr-crane" class="screen">
-        <div id="machine"><div id="hole"></div><div id="unit" style="left:150px;"><div id="wire"></div><div id="claw"><div class="arm L" id="armL"></div><div class="arm R" id="armR"></div></div></div><div id="p-con"></div></div>
-        <div style="display:flex; gap:10px; margin-top:10px; width:95%;">
-            <button class="btn" style="width:50px; background:#444;" onmousedown="mvL=1" onmouseup="mvL=0" ontouchstart="mvL=1" ontouchend="mvL=0">◀</button>
-            <button class="btn btn-main" onclick="playCrane()" style="flex:1; margin:0;">CATCH (50)</button>
-            <button class="btn" style="width:50px; background:#444;" onmousedown="mvR=1" onmouseup="mvR=0" ontouchstart="mvR=1" ontouchend="mvR=0">▶</button>
-        </div>
-    </div>
-    <div id="scr-race" class="screen">
-        <div id="track"><div id="h1" class="horse" style="top:10px;">🐴</div><div id="h2" class="horse" style="top:50px;">🦄</div><div id="h3" class="horse" style="top:90px;">🐺</div><div id="h4" class="horse" style="top:130px;">🐂</div></div>
-        <input id="r-bet-am" type="number" placeholder="賭け金" style="width:95%; margin:10px 0;">
-        <div style="display:flex; gap:5px; width:95%;">
-            <button class="btn" onclick="selH(1)" id="b-btn-1" style="flex:1;">1</button>
-            <button class="btn" onclick="selH(2)" id="b-btn-2" style="flex:1;">2</button>
-            <button class="btn" onclick="selH(3)" id="b-btn-3" style="flex:1;">3</button>
-            <button class="btn" onclick="selH(4)" id="b-btn-4" style="flex:1;">4</button>
-        </div>
-        <button class="btn btn-main" id="r-go" onclick="startRace()" disabled>レース開始</button>
-    </div>
-    <div id="scr-shop" class="screen">
-        <h3 style="color:var(--gold); margin:5px 0;">🛒 娯楽屋管理</h3>
-        <div id="shop-items" style="width:100%;"></div>
-        <div class="card">
-            <span style="font-size:12px;">🛠️ アイテム出品</span>
-            <div style="display:flex; gap:5px; margin-top:5px;"><input id="ex-name" placeholder="名" style="flex:2;"><input id="ex-price" type="number" placeholder="¥" style="flex:1;"><button class="btn" onclick="exhibitItem()" style="background:var(--gold); color:#000; padding:5px 10px;">出品</button></div>
-        </div>
-        <div id="inventory" class="card" style="font-size:13px;">📦 所持品: なし</div>
-        <input type="password" id="admin-pw" placeholder="Admin Pass" style="width:100%; margin-top:10px;" oninput="checkAdmin()">
-        <div id="admin-panel" class="admin-box">
-            <div id="u-list" style="font-size:12px; margin-bottom:10px; background:#000; padding:5px; border-radius:5px;"></div>
-            <input type="number" id="add-coin-am" placeholder="枚数" style="width:100%;"><button class="btn" style="background:#f00; width:100%; margin-top:5px;" onclick="adminAddCoin()">付与/没収</button>
-        </div>
-    </div>
-    <div id="scr-chat" class="screen">
-        <div id="chat-box"></div>
-        <div class="chat-controls">
-            <div class="input-group"><input id="chat-in" placeholder="メッセージ..." style="flex:1;"><button class="btn" onclick="sendChat()" style="background:var(--numa); color:#000; width:60px;">送信</button></div>
-            <div class="remit-group">
-                <div style="flex:2;"><label>送金相手</label><input id="s-to" placeholder="名前" style="width:100%; border:none; background:transparent;"></div>
-                <div style="flex:1;"><label>枚数</label><input id="s-am" type="number" placeholder="0" style="width:100%; border:none; background:transparent;"></div>
-                <button class="btn" onclick="sendMoney()" style="background:#fff; color:#000; align-self: center; padding:5px 10px;">送金</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<nav>
-    <button class="nav-btn active" onclick="tab('pachi')"><span>🎰</span>沼</button>
-    <button class="nav-btn" onclick="tab('crane')"><span>🏗️</span>クレーン</button>
-    <button class="nav-btn" onclick="tab('race')"><span>🏇</span>競馬</button>
-    <button class="nav-btn" onclick="tab('shop')"><span>🛒</span>管理</button>
-    <button class="nav-btn" onclick="tab('chat')"><span>💬</span>談話</button>
-</nav>
-
-<div id="login-screen">
-    <div style="text-align:center; padding:25px; background:#111; border:2px solid var(--numa); border-radius:20px; width:85%;">
-        <h3 style="color:var(--numa); margin-top:0;">こいフラ娯楽屋</h3>
-        <input type="text" id="u-in" placeholder="なまえを入力" style="width:100%; text-align:center;"><br>
-        <button class="btn btn-main" style="margin-top:15px;" onclick="reg()">入店</button>
-    </div>
-</div>
-<div id="toast"></div>
+    <div id="joystick"><div id="stick"></div></div>
 
 <script>
-    const Sys = (() => {
-        const KEY = 'koifla_v3_save';
-        const LAST_USER_KEY = 'koifla_last_active_user';
-        let data = JSON.parse(localStorage.getItem(KEY) || '{"u":{}, "chats":[], "items":[]}');
-        if(!data.items.length) data.items = [{n:"お守り",p:500},{n:"VIPパス",p:5000}];
-        let cur = null;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+// 描画が崩れないよう解像度を固定
+canvas.width = 640; canvas.height = 480;
 
-        const save = () => { if(cur) data.u[cur.name] = cur; localStorage.setItem(KEY, JSON.stringify(data)); upUI(); renShop(); renUsers(); };
-        
-        return {
-            tryAutoLogin: () => {
-                const last = localStorage.getItem(LAST_USER_KEY);
-                if(last && data.u[last]) { cur = data.u[last]; return true; }
-                return false;
-            },
-            reg: (n) => { 
-                if(!n) return false; 
-                if(!data.u[n]) data.u[n] = { name:n, coins:1000, inv:[] }; 
-                cur = data.u[n]; 
-                localStorage.setItem(LAST_USER_KEY, n);
-                save(); 
-                return true; 
-            },
-            getU: () => cur,
-            getAllU: () => Object.values(data.u),
-            add: (a) => { cur.coins+=Number(a); save(); },
-            sub: (a) => { if(cur.coins>=a){ cur.coins-=a; save(); return true; } return false; },
-            exhibit: (n, p) => { data.items.push({n, p:parseInt(p)}); save(); },
-            buy: (idx) => { const item = data.items[idx]; if(cur.coins>=item.p){ cur.coins-=item.p; cur.inv.push(item.n); save(); return true; } return false; },
-            sendMoney: (to, am) => { am=parseInt(am); if(data.u[to]&&cur.name!==to&&am>0&&cur.coins>=am){ cur.coins-=am; data.u[to].coins+=am; save(); return true; } return false; },
-            sendChat: (m) => { data.chats.push({n:cur.name, m}); if(data.chats.length>50) data.chats.shift(); save(); renChat(); },
-            getChats: () => data.chats,
-            getItems: () => data.items
-        };
-    })();
+let hp = 100, phase = 'MENU', timer = 0, isGameOver = false, turn = 0;
+let objects = [], soul, lastTime = performance.now(), shake = 0;
+const box = { x: 120, y: 220, w: 400, h: 220 }; // 戦闘枠の位置を固定
 
-    const $ = id => document.getElementById(id);
-    let u=null, mvL=0, mvR=0, cX=150, busy=false, bHorse=0;
+function initGame() {
+    hp = 100; phase = 'MENU'; turn = 0; objects = []; isGameOver = false; timer = 0;
+    soul = { x: 320, y: 350, vx: 0, vy: 0, mode: 'BLUE', speed: 4 };
+    document.getElementById('joystick').style.visibility = 'hidden';
+}
 
-    function upUI() { if(!u) return; $('c-v').innerText=Math.floor(u.coins); $('display-name').innerText=u.name; }
-    
-    function startApp() {
-        u = Sys.getU();
-        $('login-screen').style.display = 'none';
-        spwP(); loop(); renShop(); upUI(); renChat();
-    }
+function startTurn() {
+    if(isGameOver) return;
+    turn++; phase = 'ATTACK'; timer = 0; objects = [];
+    soul.mode = (turn % 2 === 0) ? 'RED' : 'BLUE';
+    document.getElementById('joystick').style.visibility = 'visible';
+}
 
-    function reg() { 
-        const n=$('u-in').value.trim(); 
-        if(n && Sys.reg(n)){ startApp(); } 
-    }
+// ジョイスティック処理
+let stickX = 0, stickY = 0;
+const js = document.getElementById('joystick');
+const st = document.getElementById('stick');
+const handleMove = (e) => {
+    e.preventDefault(); const r = js.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e;
+    const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+    const d = Math.min(Math.sqrt(dx*dx + dy*dy), 50); const a = Math.atan2(dy, dx);
+    stickX = (d > 5) ? Math.cos(a) * (d/50) : 0; stickY = (d > 5) ? Math.sin(a) * (d/50) : 0;
+    st.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+};
+js.addEventListener('touchstart', handleMove); js.addEventListener('touchmove', handleMove);
+js.addEventListener('touchend', () => { stickX = 0; stickY = 0; st.style.transform = `translate(0,0)`; });
 
-    function checkAdmin() { if($('admin-pw').value === "010122") { $('admin-panel').style.display = "block"; renUsers(); } }
-    function adminAddCoin() { const am = parseInt($('add-coin-am').value); if(am) { Sys.add(am); toast("完了"); } }
-    function renUsers() { $('u-list').innerHTML = "👥:<br>" + Sys.getAllU().map(user => `${user.name}(🪙${Math.floor(user.coins)})`).join(' / '); }
-    function renShop() { 
-        $('shop-items').innerHTML = Sys.getItems().map((i, idx) => `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div><b>${i.n}</b> <small>🪙${i.p}</small></div><button class="btn" style="padding:4px 10px;" onclick="buyI(${idx})">買</button></div>`).join('');
-        if(u) $('inventory').innerText = "📦 所持: " + (u.inv.length ? u.inv.join(', ') : "なし");
-    }
-    function exhibitItem() { const n=$('ex-name').value, p=$('ex-price').value; if(n && p){ Sys.exhibit(n, p); $('ex-name').value=''; $('ex-price').value=''; toast("出品完了"); } }
-    function buyI(idx) { if(Sys.buy(idx)) toast("購入完了"); else toast("不足"); }
+function update(dt) {
+    if (isGameOver) return;
+    if (shake > 0) shake -= dt;
 
-    // ゲームロジック
-    const cvs=$('p-cvs'), ctx=cvs.getContext('2d');
-    let balls=[], pins=[]; for(let r=0; r<10; r++) for(let c=0; c<8; c++) pins.push({x:35+c*40+(r%2)*20, y:40+r*35});
-    function drawP(){ ctx.clearRect(0,0,350,380); ctx.fillStyle='#444'; pins.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,3,0,7);ctx.fill();}); balls.forEach((b,i)=>{ b.y+=b.vy; b.vy+=0.25; b.x+=b.vx; pins.forEach(p=>{ if(Math.hypot(b.x-p.x,b.y-p.y)<12){ b.vx=(b.x-p.x)*0.6; b.vy*=-0.4; }}); if(b.y>350 && b.x>140 && b.x<210){ Sys.add(40); balls.splice(i,1); toast("WIN! +40"); } else if(b.y>390) balls.splice(i,1); ctx.fillStyle='#39ff14'; ctx.beginPath(); ctx.arc(b.x,b.y,6,0,7); ctx.fill(); }); }
-    function shootPachi(){ if(Sys.sub(5)) balls.push({x:175, y:20, vx:Math.random()-0.5, vy:2}); }
-    function selH(n){ bHorse=n; for(let i=1;i<=4;i++) $('b-btn-'+i).style.background=(i==n)?'var(--pink)':'#333'; $('r-go').disabled=false; }
-    function startRace(){ const am = parseInt($('r-bet-am').value); if(!am || am <= 0 || !Sys.sub(am)) return; busy = true; $('r-go').disabled = true; let pos = [10,10,10,10,10]; let iv = setInterval(() => { for(let i=1; i<=4; i++){ pos[i] += Math.random() * 8; $(`h${i}`).style.left = pos[i] + "%"; if(pos[i] >= 88){ clearInterval(iv); if(i === bHorse){ Sys.add(am * 2); toast("的中！"); } else toast(i+"番勝利"); setTimeout(() => { for(let j=1; j<=4; j++) $(`h${j}`).style.left = "10px"; busy = false; }, 1500); break; } } }, 50); }
-    async function playCrane(){
-        if(busy || !Sys.sub(50)) return; busy=true;
-        const w=$('wire'), aL=$('armL'), aR=$('armR'), ut=$('unit'); let hit=null;
-        await moveW(w, 30, 260, 4); aL.style.transform='rotate(-5deg)'; aR.style.transform='rotate(5deg)';
-        document.querySelectorAll('.pz').forEach(p=>{ if(Math.abs(parseInt(p.style.left)-cX-10)<18) hit=p; });
-        await new Promise(r=>setTimeout(r,500));
-        let failAt = Math.random() < 0.4 ? Math.floor(Math.random()*150 + 80) : -1;
-        await new Promise(r=>{ let s=260; function up(){ s-=4; w.style.height=s+"px"; if(hit){ hit.style.bottom = (300-s-25)+"px"; if(failAt!==-1 && s<failAt){ aL.style.transform='rotate(40deg)'; aR.style.transform='rotate(-40deg)'; hit.style.bottom="10px"; hit=null; } } if(s>30) requestAnimationFrame(up); else r(); } up(); });
-        if(hit){ ut.style.transition="left 1s"; cX=5; ut.style.left="5px"; let mvI = setInterval(()=>{ if(hit) hit.style.left=(ut.offsetLeft+10)+"px"; },20); await new Promise(r=>setTimeout(r,1000)); clearInterval(mvI); aL.style.transform='rotate(40deg)'; aR.style.transform='rotate(-40deg)'; hit.style.bottom="-60px"; await new Promise(r=>setTimeout(r,600)); hit.remove(); Sys.add(250); toast("GET! +250"); spwP(); } else { ut.style.transition="left 0.5s"; cX=5; ut.style.left="5px"; await new Promise(r=>setTimeout(r,500)); }
-        ut.style.transition="none"; busy=false;
-    }
+    if (phase === 'ATTACK') {
+        timer += dt;
 
-    function sendChat(){ const i=$('chat-in'); if(i.value){ Sys.sendChat(i.value); i.value=""; } }
-    function renChat(){ $('chat-box').innerHTML=Sys.getChats().map(c=>`<div><b>${c.n}:</b> ${c.m}</div>`).join(''); $('chat-box').scrollTop=$('chat-box').scrollHeight; }
-    function sendMoney(){ if(Sys.sendMoney($('s-to').value, $('s-am').value)) { toast("送金完了"); $('s-to').value=''; $('s-am').value=''; } else toast("失敗"); }
-    function moveW(el,s,e,st){ return new Promise(r=>{ function f(){ s+=st; el.style.height=s+"px"; if((st>0&&s<e)||(st<0&&s>e)) requestAnimationFrame(f); else r();} f();}); }
-    function spwP(){ if($('p-con').children.length==0) for(let i=0;i<4;i++) $('p-con').innerHTML+=`<div class="pz" style="left:${80+i*70}px; bottom:10px;">🎁</div>`; }
-    function tab(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $('scr-'+id).classList.add('active'); document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); event.currentTarget.classList.add('active'); if(id==='chat') renChat(); }
-    function toast(m){ const t=$('toast'); t.innerText=m; t.style.display='block'; setTimeout(()=>t.style.display='none',1500); }
-    function loop() { if(!busy && $('scr-crane').classList.contains('active')) { if(mvL) cX=Math.max(5,cX-4); if(mvR) cX=Math.min(310,cX+4); $('unit').style.left=cX+"px"; } drawP(); requestAnimationFrame(loop); }
-    
-    // 起動処理
-    window.onload = () => {
-        if(Sys.tryAutoLogin()) {
-            startApp();
-            toast("おかえりなさい！");
-        } else {
-            $('login-screen').style.display = 'flex';
+        // 攻撃1: 高速骨
+        if (Math.floor(timer) % 35 === 0 && timer < 300) {
+            objects.push({ type: 'BONE', x: 640, y: box.y + box.h - 60, w: 20, h: 60, speed: 7 });
         }
-        renShop();
-        renChat();
-    };
+        // 攻撃2: 洗濯ブラスター (ターン後半)
+        if (timer > 300 && timer < 305 && objects.filter(o=>o.type==='BLASTER').length === 0) {
+            for(let i=0; i<4; i++) {
+                objects.push({ type: 'BLASTER', x: 320, y: 330, angle: (Math.PI/2)*i, timer: 30, active: false, rot: 0.12 });
+            }
+        }
+
+        if (timer > 600) { phase = 'MENU'; document.getElementById('joystick').style.visibility = 'hidden'; }
+
+        // ソウル移動
+        if (soul.mode === 'RED') {
+            soul.vx = stickX * soul.speed * dt;
+            soul.vy = stickY * soul.speed * dt;
+        } else {
+            soul.vx = stickX * soul.speed * dt;
+            soul.vy += 0.7 * dt; // 重力
+            if (stickY < -0.3 && soul.y >= box.y + box.h - 15) soul.vy = -6 + (stickY * 6);
+        }
+        soul.x += soul.vx; soul.y += soul.vy;
+        soul.x = Math.max(box.x+15, Math.min(box.x+box.w-15, soul.x));
+        soul.y = Math.max(box.y+15, Math.min(box.y+box.h-15, soul.y));
+        if (soul.y >= box.y + box.h - 15) soul.vy = 0;
+
+        // 当たり判定
+        objects.forEach((obj, i) => {
+            if (obj.type === 'BONE') {
+                obj.x -= obj.speed * dt;
+                if (Math.abs(soul.x - obj.x) < 18 && soul.y > obj.y - 5) { hp -= 1.5 * dt; shake = 5; }
+            } else if (obj.type === 'BLASTER') {
+                obj.angle += obj.rot * dt;
+                obj.timer -= dt;
+                if (obj.timer <= 0 && !obj.active) { obj.active = true; obj.timer = 20; shake = 10; }
+                if (obj.active) {
+                    let d = Math.abs((soul.x - obj.x)*Math.sin(obj.angle) - (soul.y - obj.y)*Math.cos(obj.angle));
+                    if (d < 45) { hp -= 2.5 * dt; shake = 3; }
+                }
+            }
+            if (obj.x < -50 || (obj.active && obj.timer < -30)) objects.splice(i, 1);
+        });
+    }
+    if (hp <= 0) { hp = 0; isGameOver = true; }
+    document.getElementById('hp-fill').style.width = hp + "%";
+    document.getElementById('hp-text').innerText = Math.ceil(hp) + "/100";
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    if (shake > 0) ctx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2);
+
+    // 1. サンズの描画 (常に中央上部)
+    const sansX = 320, sansY = 100;
+    ctx.fillStyle = 'white';
+    ctx.beginPath(); ctx.ellipse(sansX, sansY, 40, 35, 0, 0, Math.PI*2); ctx.fill(); // 頭
+    ctx.fillStyle = 'black';
+    ctx.beginPath(); ctx.arc(sansX-15, sansY-5, 8, 0, Math.PI*2); ctx.fill(); // 目
+    ctx.beginPath(); ctx.arc(sansX+15, sansY-5, 8, 0, Math.PI*2); ctx.fill();
+    if (phase === 'ATTACK') {
+        ctx.fillStyle = (Math.floor(performance.now()/100)%2===0) ? '#0ff' : '#ff0';
+        ctx.beginPath(); ctx.arc(sansX+15, sansY-5, 6, 0, Math.PI*2); ctx.fill();
+    }
+
+    // 2. 戦闘枠の描画
+    ctx.strokeStyle = 'white'; ctx.lineWidth = 5;
+    ctx.strokeRect(box.x, box.y, box.w, box.h);
+
+    // 3. 攻撃オブジェクトの描画
+    objects.forEach(obj => {
+        if (obj.type === 'BONE') {
+            ctx.fillStyle = 'white'; ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+        } else if (obj.type === 'BLASTER') {
+            ctx.save(); ctx.translate(obj.x, obj.y); ctx.rotate(obj.angle);
+            ctx.fillStyle = 'white';
+            ctx.beginPath(); ctx.moveTo(-30, -25); ctx.lineTo(40, 0); ctx.lineTo(-30, 25); ctx.fill();
+            if (obj.active) {
+                ctx.shadowBlur = 20; ctx.shadowColor = 'white';
+                ctx.fillRect(0, -35, 800, 70);
+            } else {
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.strokeRect(0, -30, 800, 60);
+            }
+            ctx.restore();
+        }
+    });
+
+    // 4. ソウルの描画
+    if (phase === 'ATTACK') {
+        ctx.fillStyle = (soul.mode === 'RED' ? '#f00' : '#4af');
+        ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle;
+        ctx.beginPath();
+        ctx.moveTo(soul.x, soul.y + 12);
+        ctx.lineTo(soul.x - 12, soul.y - 10);
+        ctx.lineTo(soul.x + 12, soul.y - 10);
+        ctx.fill();
+    } else if (!isGameOver) {
+        ctx.fillStyle = 'white'; ctx.font = '22px DotGothic16'; ctx.textAlign = 'left';
+        ctx.fillText("* 準備はいいか？", box.x + 30, box.y + 60);
+    }
+
+    ctx.restore();
+
+    // 5. ゲームオーバー表示
+    if (isGameOver) {
+        ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'red'; ctx.font = '50px DotGothic16'; ctx.textAlign = 'center';
+        ctx.fillText('GAME OVER', 320, 240);
+        ctx.fillStyle = 'white'; ctx.font = '20px DotGothic16';
+        ctx.fillText('タップしてリトライ', 320, 300);
+    }
+}
+
+function loop() {
+    let now = performance.now();
+    update((now - lastTime) / 16.6);
+    draw();
+    lastTime = now;
+    requestAnimationFrame(loop);
+}
+
+initGame();
+loop();
 </script>
 </body>
 </html>
